@@ -4,7 +4,7 @@ title:      使用fuzzer实现anti-debugging的趣味实验 XD
 subtitle:   Linux平台下使用fuzzer实现anti-debugging的实验
 date:       2019-01-20
 author:     Weizhou
-header-img: img/post-bg-hacker.jpg
+header-img: img/p1_bg.jpeg
 catalog: true
 tags:
     - Binary
@@ -20,7 +20,7 @@ tags:
 
 首先使用C语言写一个类似于Crackme的简单小程序：
 
-```C code
+```cpp
 #include <stdio.h>
 #include <string.h>
 
@@ -48,7 +48,7 @@ int main(int argc, char* argv[])
 
 <strong>python源代码：</strong>
 
-```python3
+```python
 #/bin/python3!
 
 import os
@@ -95,23 +95,41 @@ if __name__ == '__main__':
 			os.system("rm gdb.txt r2_tmp.txt r2.txt gdb_tmp.txt normal_tmp.txt std_output.txt")
 exit()
 ```
-这段代码主要实现了在程序功能正常的情况下对 radare2 和 gdb的实现反调试的功能。<br>
-因为Crackme程序中只有一个main函数，所以check_r2()函数主要是要能对main函数进行一定的干扰。<br>
-运行程序之后会生成一个secret_tmp的二进制文件。<br>
-下面是几组在fuzzing之前和之后的对比<br>
+这段代码主要实现了在程序功能正常的情况下对`radare2`和`gdb`的实现反调试的功能。<br>
+因为Crackme程序中只有一个`main`函数，所以`check_r2()`函数主要是要能对main函数进行一定的干扰。<br>
+运行程序之后会生成一个`secret_tmp`的二进制文件。<br>
+下面是几组在fuzzing之前和之后的对比。<br>
+***
+###fuzzing前后程序运行对比:
+[![fuz1.jpg](https://i.postimg.cc/xdd33kxw/fuz1.jpg)](https://postimg.cc/PCBDtqky)
 
-<strong>fuzzing前后程序运行对比</strong><br>
-![Github](img/fuz1.jpg)
+###fuzzing前后gdb调试对比:
+**对源文件进行调试：**
+[![fuz2.png](https://i.postimg.cc/rz646s9w/fuz2.png)](https://postimg.cc/hQrvTSwk)
 
+**对修改后文件进行调试：**
+[![fuz3.png](https://i.postimg.cc/9MnTpJRT/fuz3.png)](https://postimg.cc/5Y8695mN)
 
+###fuzzing前后radare2 调试对比：
+**对源文件进行调试：**
+[![fuz4.png](https://i.postimg.cc/v84SdKvJ/fuz4.png)](https://postimg.cc/hhq0Lp6s)
 
+[![fuz5.png](https://i.postimg.cc/HxxXXfxd/fuz5.png)](https://postimg.cc/v1J4d2fN)
 
+**对修改后文件进行调试：**
+[![fuz6.png](https://i.postimg.cc/SRY9tCCP/fuz6.png)](https://postimg.cc/dZvDh7WR)
 
+[![fuz7.png](https://i.postimg.cc/KYmnvKhK/fuz7.png)](https://postimg.cc/K1sK08zF)
 
+对比前后可发现，修改后的文件不太能被反汇编，并且会显示不可识别文件。radare2还能够进行反汇编，但是函数列表基本除了main不可读。内部函数也看不出调用了`printf`和`strcmp`等libc函数。通过`ltrace`也不太能发现libc函数调用记录：
 
+[![fuz8.png](https://i.postimg.cc/HL3bJpT6/fuz8.png)](https://postimg.cc/6728gx2Z)
 
+##结语
+总的来说是这是个很有意思的过程，可能对于实际来说并没有很大的帮助，但是是个很有趣的思路，或许经过多次实验通过一些统计可能会发现一些有趣的现象。
 
-
+### 参考
+- [LiveOverflow-Youtube](https://www.youtube.com/watch?v=OZvc-c1OLnM&list=PLhixgUqwRTjxglIswKp9mpkfPNfHkzyeN&index=9)
 
 
 
