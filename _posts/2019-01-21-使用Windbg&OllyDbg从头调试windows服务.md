@@ -4,7 +4,7 @@ title:      使用Windbg&OllyDbg从头调试windows服务
 subtitle:   Windows平台使用Windbg&OllyDbg从头调试服务
 date:       2019-01-20
 author:     Weizhou
-header-img: img/p2_bg.jpeg
+header-img: img/p2_bg.jpg
 catalog: true
 tags:
     - Malware
