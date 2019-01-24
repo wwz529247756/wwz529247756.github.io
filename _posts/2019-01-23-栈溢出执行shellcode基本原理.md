@@ -4,7 +4,7 @@ title:      buffer overflow执行shellcode基本原理
 subtitle:   Linux平台下经典buffer overflow原理介绍
 date:       2019-01-23
 author:     Weizhou
-header-img: img/p1_bg.jpeg
+header-img: img/p3_bg.jpg
 catalog: true
 tags:
     - Binary
