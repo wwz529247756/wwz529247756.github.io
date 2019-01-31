@@ -1,0 +1,128 @@
+---
+layout:     post
+title:      GDB常用指令
+subtitle:   Linux平台gdb调试程序常用指令
+date:       2019-01-30
+author:     Weizhou
+header-img: img/p5_bg.jpg
+catalog: true
+tags:
+    - Binary
+    - Reverse
+---
+
+## 前言
+gdb是linux平台必用的调试CLI软件，它不但支持程序员对可读源代码的
+调试，同样也支持对程序的逆向汇编和动态调试。
+
+gdb所支持的调试功能十分强大，通过help查看可支持的指令很多。
+本片文章总结一些在逆向时常用的一些指令。
+
+## 正文
+
+### 1. 运行gdb加载程序
+** gdb [elf_filename] **
+
+### 2. 运行程序：
+** run(r) [args] ** <br>
+注：<br>
+[args]可接收多个参数的输入，e.g. r arg1 arg2 arg3 ... <br>
+除此之外还接受命令行重定向符的内容输入，e.g. r < /tmp/test
+（将 `/tmp/test` 文件中的内容作输入传入到程序中，
+实际上这是一种重定向，`/tmp/test`文件内容不会作为程序运行的参数
+传入程序并开始运行）
+如果想使得一个命令执行之后的结果当作参数输入到一个程序中时候，
+在linux平台可以使用：** ./program "\`python -c "print 'C'*4"\`"**
+在gdb中可以使用类似的指令run程序：
+** r "\`python -c "print 'C'*4"\`" **
+
+### 3. 打印载入函数列表：
+** info functions **
+
+### 4. 反汇编指定函数：
+** 	disassemble [function_name] **
+
+
+注：<br>
+通常在使用`info functions`命令之后使用该命令对指定函数进行反汇编
+
+### 5. 设置汇编语言风格：
+** 	set disassembly-flavor intel **
+
+
+注：<br>
+将反汇编代码风格设置为`intel`形式
+
+### 6. 设置断点：
+** break(b) [function/address] **
+
+若需要在指定地址下断点，地址前需要加`*`，e.g.:
+
+** 	break(b) *0x080485bf **
+
+若不加`*`会显示所设置断点处不在加载的范围之内。
+
+如若程序开启了ASLR（随机地址分布）则这种设置断点方式
+同样会显示设置的断点地址不在范围加载程序加载地址范围内
+此时设置断点的方式应为`函数名+指定行数`，e.g.:
+
+** break(b) *main+19 **
+
+设置之后程序就会停在汇编程序`main`函数的第`19`行。
+
+### 7. 单步调试源码：
+** n (step over) **
+
+** s (step into) **
+
+### 8. 单步调试汇编：
+** ni (step over) **
+
+** si (step into) **
+
+###	9. 运行当前直到返回：
+** finish **
+
+### 10. 继续执行：
+** continue(c) **
+
+### 11. 修改变量：
+** 	set var x=[val] **
+
+### 12. 修改内存：
+** 	set {int}[地址]=[数值] **
+
+e.g. `set {int}0xffffd684=0xf7ff867a`<br>
+其中`{int}`的作用是指定用户输入的地址可修改的数据长度。
+上述例子中使用的是`int`数据类型，所以会在`0xffffd684`
+地址后修改4bytes的数据长度，并将该地址区域的数据修改为
+`0xf7ff867a`
+
+### 13. 查看程序映射：
+** 	info proc map **
+
+### 14. 查看寄存器：
+** info r **
+
+查看指定寄存器时可使用`examine`命令，e.g. `x $eip`
+查看`eip`寄存器内容
+
+### 14. find命令搜索：
+** 	find [start_address] [end_address/+length] arg1... **
+
+e.g. `find 0xf7f6d000, +9999999, "/bin/sh"`
+
+注：<br>
+0xf7f6d000为libc的启示映射地址，该操用于return2libc攻击，
+获取`"/bin/sh"`字符所在地址。
+
+### 15. 查看内存：
+**examine(x)/wx32 0xfb802216**
+（以word hex的形式查看0xfb802216地址的内存 查看内容长度为32）
+
+**examine(x)/s 0xfb802216**
+（以string的形式查看 0xfb802212地址处的内容）
+
+
+## 结语
+gdb的指令还有很多，还需要在实践中继续总结归纳，持续更新吧。
