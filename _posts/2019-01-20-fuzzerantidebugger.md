@@ -99,7 +99,7 @@ exit()
 因为Crackme程序中只有一个`main`函数，所以`check_r2()`函数主要是要能对main函数进行一定的干扰。<br>
 运行程序之后会生成一个`secret_tmp`的二进制文件。<br>
 下面是几组在fuzzing之前和之后的对比。<br>
-***
+
 ###fuzzing前后程序运行对比:
 ![fuz1.png](/img/p1/fuz1.png)
 
