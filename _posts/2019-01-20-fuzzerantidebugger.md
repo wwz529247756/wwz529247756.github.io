@@ -100,30 +100,30 @@ exit()
 运行程序之后会生成一个`secret_tmp`的二进制文件。<br>
 下面是几组在fuzzing之前和之后的对比。<br>
 
-###fuzzing前后程序运行对比:
-![fuz1.png](/img/p1/fuz1.png)
+### fuzzing前后程序运行对比:
+![fuz1.jpg](https://github.com/wwz529247756/wwz529247756.github.io/blob/master/img/p1/fuz1.jpg?raw=true)
 
-###fuzzing前后gdb调试对比:
+### fuzzing前后gdb调试对比:<br>
 **对源文件进行调试：**
-![fuz2.png](/img/p1/fuz2.png)
+![fuz2.png](https://github.com/wwz529247756/wwz529247756.github.io/blob/master/img/p1/fuz2.png?raw=true)
 
 **对修改后文件进行调试：**
-![fuz3.png](/img/p1/fuz3.png)
+![fuz3.png](https://github.com/wwz529247756/wwz529247756.github.io/blob/master/img/p1/fuz3.png?raw=true)
 
-###fuzzing前后radare2 调试对比：
+### fuzzing前后radare2 调试对比：<br>
 **对源文件进行调试：**
-![fuz4.png](/img/p1/fuz4.png)
+![fuz4.png](https://github.com/wwz529247756/wwz529247756.github.io/blob/master/img/p1/fuz4.png?raw=true)
 
-![fuz5.png](/img/p1/fuz5.png)
+![fuz5.png](https://github.com/wwz529247756/wwz529247756.github.io/blob/master/img/p1/fuz5.png?raw=true)
 
 **对修改后文件进行调试：**
-![fuz6.png](/img/p1/fuz6.png)
+![fuz6.png](https://github.com/wwz529247756/wwz529247756.github.io/blob/master/img/p1/fuz6.png?raw=true)
 
-![fuz7.png](/img/p1/fuz7.png)
+![fuz7.png](https://github.com/wwz529247756/wwz529247756.github.io/blob/master/img/p1/fuz7.png?raw=true)
 
 对比前后可发现，修改后的文件不太能被反汇编，并且会显示不可识别文件。radare2还能够进行反汇编，但是函数列表基本除了main不可读。内部函数也看不出调用了`printf`和`strcmp`等libc函数。通过`ltrace`也不太能发现libc函数调用记录：
 
-![fuz8.png](/img/p1/fuz8.png)
+![fuz8.png](https://github.com/wwz529247756/wwz529247756.github.io/blob/master/img/p1/fuz8.png?raw=true)
 
 ## 结语
 总的来说是这是个很有意思的过程，可能对于实际来说并没有很大的帮助，但是是个很有趣的思路，或许经过多次实验通过一些统计可能会发现一些有趣的现象。
