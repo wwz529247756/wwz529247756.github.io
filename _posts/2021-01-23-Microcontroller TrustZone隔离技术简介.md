@@ -4,7 +4,7 @@ title:      Microcontroller Trustzone隔离技术简介
 subtitle:   TrustZone-M简介
 date:       2021-01-23
 author:     Weizhou
-header-img: img/p7_bg.jpg
+header-img: img/p7_bg.jpeg
 catalog: true
 tags:
     - TEE
