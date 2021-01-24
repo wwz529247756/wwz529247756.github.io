@@ -34,9 +34,13 @@ tags:
 
 也就是说，防止在非安全世界的任务在被compromised之后任意构造含有SG指令的二进制代码，实现原本在NSC区域中不提供的入口和功能，从而影响安全世界的执行。<br>
 &emsp;&emsp;除了SG指令之外，TrusZone-M还提供了从安全世界返回到非安全世界的指令：BXNS（Branch eXchange to None Secure）和BLXNS（Branch with Link eXchange to None Secure）。BXNS指令在当安全世界函数执行结束后反汇到安全世界时执行；BLXNS则是一种从安全世界调用非安全函数的用法，调用的非安全世界函数执行结束后能够根据`Link`返回到安全世界继续执行。除此之外，思路与TrustZone-A相类似的，安全世界和非安全世界的切换同样可以通过exception（异常）和interrupt（中断）注册的handler完成。简单理解就是，在安全世界注册了一个安全设备的中断回调函数，当对应的中断号的信号被送到CPU时，若当前执行在非安全世界，CPU的模式会从非安全世界切换至安全世界，并执行在安全世界注册的回调函数。<br>
+安全世界与非安全世界间切换的方式如下图所示：<br>
+![3.png](https://github.com/wwz529247756/wwz529247756.github.io/blob/master/img/p11/3.PNG?raw=true)<br>
+安全世界与非安全世界间切换代码示例如下图所示：<br>
+![4.png](https://github.com/wwz529247756/wwz529247756.github.io/blob/master/img/p11/4.PNG?raw=true)<br>
 ### SAU与IDAU
 &emsp;&emsp;SAU和IDAU分别时`Security Attribution Unit`和`Implementation Defined Atrtribute Unit`的缩写，其实际用途是将一整块物理内存区划分为不同的区域，并为其打上安全世界、非安全世界或者NSC区域的标签，从而在硬件层面防止了代码的跨域访问和执行。
 ![2.png](https://github.com/wwz529247756/wwz529247756.github.io/blob/master/img/p11/2.PNG?raw=true)<br>
 &emsp;&emsp;SAU与IDAU看似功能相似，但出功能类似之外还是有一定的区别。SAU是Arm-v8中必定会包含的单元，但不同的SoC设计可能IDAU并不是必需的。所以SAU可以看作是CPU内置的一种单元，并且可进行变成，IDAU可理解为是外接的原件，并且在出厂后不能进行编程。Arm-v8架构系统boot后是出于安全世界的，此时可能有外部的IDAU已经分配了安全世界和非安全世界的内存片区，但在安全世界中可通过类似于MPU编程的方式修改SAU覆盖已设置的IDAU设置的内存区。<br>
-&emsp;&emsp;从上图中可知，因为SAU/IDAU的引入，安全世界和非安全世界各自有一组MPU对内存进行管控。非安全世界中的MPU寄存器数量Arm-v7基本保持一致，都为8个。在安全世界也同样有8个MPU寄存器，用于管控安全世界程序对内存地址的访问，功能与非安全世界一致。安全世界的MPU配置只有当CPU处于安全世界时才能生效，同理非安全世界的MPU奕然。
+&emsp;&emsp;从上图中可知，因为SAU/IDAU的引入，安全世界和非安全世界各自有一组MPU对内存进行管控。非安全世界中的MPU寄存器数量Arm-v7基本保持一致，都为8个。在安全世界也同样有8个MPU寄存器，用于管控安全世界程序对内存地址的访问，功能与非安全世界一致。安全世界的MPU配置只有当CPU处于安全世界时才能生效，同理非安全世界的MPU亦然。
 
