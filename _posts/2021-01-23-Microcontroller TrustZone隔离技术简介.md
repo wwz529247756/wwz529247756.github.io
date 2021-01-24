@@ -30,13 +30,15 @@ tags:
 &emsp;&emsp;首先可以明确，在TrustZone-M的架构下内存空间可分为三个部分，分别是：非安全世界地址空间，安全世界地址空间，和NSC（none-secure callable）地址空间。TrustZone-M架构通过一种各自代码只能在各自世界执行的机制，实现了安全世界和非安全世界的隔离。即安全世界代码只能够在安全世界执行，非安全世界代码只能够在非安全世界执行，防止了跨域执行的可能风险。NSC区域用于从非安全世界进入安全世界，这部分的代码能够被非安全世界调用但要遵循一定的规则。NSC区域由SAU（Security Attribution Unit）或IDAU（Implementation Defined Atrtribute Unit）定义，后续会对这两个单元的机制进行深入的剖析。
 &emsp;&emsp;TrustZone-M为实现从非安全世界到安全世界的切换引入了一个新的指令SG（Secure Gateway），并且该指令只能够在NSC区，在其他区掉用改指令会使系统陷入fault。根据官方的介绍，NSC的存在主要的原因是：
 ```
-“The reason for introducing NSC memory is to prevent other binary data, for example, a lookup table, which has a value the same as the opcode as the SG instruction, being used as an entry function in to the Secure state.”
+“The reason for introducing NSC memory is to prevent other binary data,
+for example, a lookup table, which has a value the same as the opcode as 
+the SG instruction, being used as an entry function in to the Secure state.”
 ```
 也就是说，防止在非安全世界的任务在被compromised之后任意构造含有SG指令的二进制代码，实现原本在NSC区域中不提供的入口和功能，从而影响安全世界的执行。<br>
 &emsp;&emsp;除了SG指令之外，TrusZone-M还提供了从安全世界返回到非安全世界的指令：BXNS（Branch eXchange to None Secure）和BLXNS（Branch with Link eXchange to None Secure）。BXNS指令在当安全世界函数执行结束后反汇到安全世界时执行；BLXNS则是一种从安全世界调用非安全函数的用法，调用的非安全世界函数执行结束后能够根据`Link`返回到安全世界继续执行。除此之外，思路与TrustZone-A相类似的，安全世界和非安全世界的切换同样可以通过exception（异常）和interrupt（中断）注册的handler完成。简单理解就是，在安全世界注册了一个安全设备的中断回调函数，当对应的中断号的信号被送到CPU时，若当前执行在非安全世界，CPU的模式会从非安全世界切换至安全世界，并执行在安全世界注册的回调函数。<br>
 ### SAU与IDAU
 SAU和IDAU分别时`Security Attribution Unit`和`Implementation Defined Atrtribute Unit`的缩写，其实际用途是将一整块物理内存区划分为不同的区域，并为其打上安全世界、非安全世界或者NSC区域的标签，从而在硬件层面防止了代码的跨域访问和执行。
-![1.png](https://github.com/wwz529247756/wwz529247756.github.io/blob/master/img/p11/2.PNG?raw=true)<br>
+![2.png](https://github.com/wwz529247756/wwz529247756.github.io/blob/master/img/p11/2.PNG?raw=true)<br>
 
 
 
