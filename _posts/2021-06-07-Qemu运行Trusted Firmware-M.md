@@ -4,7 +4,7 @@ title:      使用Qemu运行Trusted Firmware-M
 subtitle:   TF-M入门指南
 date:       2021-06-07
 author:     Weizhou
-header-img: img/p7_bg.jpg
+header-img: img/p7_bg.jpeg
 catalog: true
 tags:
     - TEE
